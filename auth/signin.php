@@ -1,6 +1,14 @@
 <?php
 include "../config/sqlConfig.php";
+require_once '../vendor/autoload.php';
+
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
 session_start();
+
+$log = new Logger('signin');
+$log->pushHandler(new StreamHandler('../logs/signin.log', Logger::INFO));
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -41,23 +49,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                         $stmt->bind_param("si", $token, $user_id);
                         $stmt->execute();
                     }
+                    $log->info("User $login logged in successfully.");
                 } else {
                     $message = "Неверный логин или пароль.";
                     $messageClass = "error";
+                    $log->warning("Failed login attempt for $login.");
                 }
             } else {
                 $message = "Неверный логин или пароль.";
                 $messageClass = "error";
+                $log->warning("Failed login attempt for $login.");
             }
 
             $stmt->close();
         } else {
             $message = "Пожалуйста, заполните все поля.";
             $messageClass = "error";
+            $log->warning("Empty fields during login attempt.");
         }
     } else {
         $message = "Неверный CSRF-токен.";
         $messageClass = "error";
+        $log->warning("Invalid CSRF token during login attempt.");
     }
 }
 
@@ -91,7 +104,6 @@ if (isset($_GET['code'])) {
             $stmt->store_result();
 
             if ($stmt->num_rows > 0) {
-
                 $stmt->bind_result($user_id);
                 $stmt->fetch();
                 $_SESSION['user_id'] = $user_id;
@@ -99,8 +111,8 @@ if (isset($_GET['code'])) {
                 $_SESSION['role'] = "vk";
                 $message = "Добро пожаловать, $vk_name!";
                 $messageClass = "success";
+                $log->info("User $vk_name logged in via VK.");
             } else {
-
                 $stmt = $conn->prepare("INSERT INTO users (vk_id, login, role) VALUES (?, ?, 'vk')");
                 $stmt->bind_param("ss", $user_id, $vk_name);
                 $stmt->execute();
@@ -108,11 +120,13 @@ if (isset($_GET['code'])) {
                 $_SESSION['username'] = $vk_name;
                 $message = "Вы зарегистрированы как $vk_name!";
                 $messageClass = "success";
+                $log->info("User $vk_name registered via VK.");
             }
         }
     } else {
         $message = "Ошибка авторизации через ВКонтакте.";
         $messageClass = "error";
+        $log->error("VK authentication error.");
     }
 }
 
@@ -149,7 +163,7 @@ $conn->close();
                 <input type="checkbox" name="remember-me" id="remember-me" />
                 Запомнить меня
             </label>
-            <button type="submit">Войти</button>
+            <button class="btn" type="submit">Войти</button>
         </form>
         <a href="https://oauth.vk.com/authorize?client_id=52900147&display=page&redirect_uri=https://php_auth.test/auth/signin.php&scope=email&response_type=code&v=5.131">
             <button class="vk-btn">Войти через ВКонтакте</button>

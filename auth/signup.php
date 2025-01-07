@@ -1,5 +1,12 @@
 <?php
 include "../config/sqlConfig.php";
+require_once '../vendor/autoload.php';
+
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
+$log = new Logger('signup');
+$log->pushHandler(new StreamHandler('../logs/signup.log', Logger::INFO));
 
 $message = "";
 $messageClass = "hidden";
@@ -11,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($login) || empty($password)) {
         $message = "Пожалуйста, заполните все поля.";
         $messageClass = "error";
+        $log->warning("Empty fields during registration attempt.");
     } else {
         $stmt = $conn->prepare("SELECT id FROM users WHERE login = ?");
         $stmt->bind_param("s", $login);
@@ -20,6 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt->num_rows > 0) {
             $message = "Этот логин уже занят. Пожалуйста, выберите другой.";
             $messageClass = "error";
+            $log->warning("Username $login already taken.");
         } else {
             $salt = bin2hex(random_bytes(16));
             $hashedPassword = password_hash($password . $salt, PASSWORD_BCRYPT);
@@ -29,9 +38,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($stmt->execute()) {
                 $message = "Регистрация прошла успешно!";
                 $messageClass = "success";
+                $log->info("User $login successfully registered.");
             } else {
                 $message = "Ошибка регистрации. Попробуйте ещё раз.";
                 $messageClass = "error";
+                $log->error("Error during registration for $login.");
             }
         }
         $stmt->close();

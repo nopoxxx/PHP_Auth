@@ -32,7 +32,7 @@ body {
     border: 1px solid #ccc;
     border-radius: 4px;
 }
-.form-container button {
+.form-container .btn {
     width: 100%;
     padding: 10px;
     background-color: #5cb85c;
@@ -42,7 +42,7 @@ body {
     font-size: 16px;
     cursor: pointer;
 }
-.form-container button:hover {
+.form-container .btn:hover {
     background-color: #4cae4c;
 }
 .message {
@@ -146,4 +146,11 @@ header div {
     background-color: #4a76a8;
     color: #fff;
     margin-top: 10px;
+    width: 100%;
+    padding: 10px;
+    /*background-color: #5cb85c;*/
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
 }
